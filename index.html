@@ -1,526 +1,353 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Info, Coffee, Utensils, Home, Car, Sun, Moon, Copy, CheckCircle } from 'lucide-react';
 
-const OkinawaTripApp = () => {
-  const [activeTab, setActiveTab] = useState(0);
+import React, { useState } from 'react';
+import { 
+  MapPin, Clock, Calendar, Plane, Coffee, Camera, 
+  ShoppingBag, Utensils, CloudSun, Navigation, 
+  Copy, CheckCircle2, ChevronRight, Home, Info, MessageSquare, Sun, Cloud, CloudRain
+} from 'lucide-react';
+
+// --- DATA ---
+const WEATHER_DATA = {
+  '4/25': { temp: '16° / 23°', icon: <CloudSun className="w-5 h-5 text-orange-400" />, desc: '구름조금' },
+  '4/26': { temp: '17° / 25°', icon: <Sun className="w-5 h-5 text-red-500" />, desc: '맑음 (사진찍기 최고!)' },
+  '4/27': { temp: '18° / 24°', icon: <Cloud className="w-5 h-5 text-gray-400" />, desc: '흐림 (디즈니 걷기 좋음)' },
+  '4/28': { temp: '15° / 20°', icon: <CloudRain className="w-5 h-5 text-blue-400" />, desc: '오전 비' },
+};
+
+const ITINERARY = [
+  {
+    day: 1,
+    date: '4/25 (목)',
+    title: '상하이의 클래식, 난징동루와 야경',
+    items: [
+      { time: '15:30', title: '푸동 공항 도착 & 숙소 이동', cn: '上海市黄浦区六合路98号', desc: 'CZ314편 도착. 수속 후 숙소로 이동하여 체크인. (난징동루/인민광장 접근성 최고!)', type: 'plane', transport: '🚕 택시 (약 50분 / 150위안)' },
+      { time: '17:00', title: '인민광장 양꼬치 & 저녁식사', cn: '人民广场', desc: '숙소 근처 인민광장역 쪽에서 양꼬치나 훠궈로 상하이 첫 끼니 해결!', type: 'food', transport: '🚶 도보 (약 5분)' },
+      { time: '18:00', title: '헤이티/차지 픽업 & 난징동루 산책', cn: '霸王茶姬(来福士店) / 南京东路步行街', desc: '래플스시티에서 밀크티 픽업 후 마시면서 난징동루 보행가 산책. m&m, 미니소, 팝마트 등 귀여운 상점 구경.', type: 'coffee', transport: '🚶 도보 (밀크티 픽업 후 난징동루 방향 직진)' },
+      { time: '19:30', title: '와이탄 일몰 및 야경 구경', cn: '外滩', desc: '난징동루 끝까지 걸어가면 펼쳐지는 동방명주와 황푸강의 야경. 사진 필수!', type: 'camera', transport: '🚶 도보 (약 15분)' },
+      { time: '20:30', title: '예원 야경 감상', cn: '豫园', desc: '유람선도 좋지만, 3인 우정여행이라면 화려한 전통 건축물인 예원의 밤거리가 사진 찍기 훨씬 예뻐요!', type: 'camera', transport: '🚕 택시 (약 10분 / 15위안)' },
+    ]
+  },
+  {
+    day: 2,
+    date: '4/26 (금)',
+    title: '상하이 핫플 정복 & 인생샷 데이',
+    items: [
+      { time: '08:30', title: '아침: 또우장 & 지엔삥', cn: '桃园眷村(新天地店) / 早餐车', desc: '숙소 근처 길거리 조식이나, 깔끔한 타오위엔쥐엔춘에서 콩국물(또우장)과 중국식 크레페(지엔삥) 먹기.', type: 'food', transport: '🚶 도보 (약 5분)' },
+      { time: '09:30', title: '숙소 휴식 및 사진 준비', cn: '六合路98号', desc: '숙소에서 잠시 쉬며 예쁜 옷으로 갈아입고 본격적인 핫플 투어 준비!', type: 'home', transport: '🚶 도보' },
+      { time: '11:00', title: '신천지 브런치 & 임시정부', cn: '新天地 / 大韩民国临时政府旧址', desc: '이국적인 유럽풍 거리 신천지에서 가벼운 커피/브런치 후, 바로 근처에 있는 대한민국 임시정부 방문.', type: 'coffee', transport: '🚕 택시 (약 12분 / 16위안)' },
+      { time: '12:30', title: '티엔즈팡 구경', cn: '田子坊', desc: '미로 같은 골목길을 누비며 아기자기한 소품 구경 및 스냅 사진 촬영.', type: 'shopping', transport: '🚕 택시 (약 5분 / 14위안) 또는 도보 15분' },
+      { time: '14:00', title: '늦은 점심: 점도덕 (딤섬)', cn: '点都德(淮海中路店)', desc: '광저우식 딤섬 맛집! 빨간 쌀창펀과 새우교자는 꼭 주문하세요.', type: 'food', transport: '🚕 택시 (약 10분 / 15위안)' },
+      { time: '15:30', title: '우캉맨션 사진 & 안푸루', cn: '武康大楼 / 安福路', desc: '상하이 엠블럼 같은 우캉맨션에서 인증샷 찍고, 트렌디한 안푸루 걷기.', type: 'camera', transport: '🚕 택시 (약 15분 / 20위안)' },
+      { time: '16:30', title: '13de Marzo 곰돌이 카페', cn: '13de Marzo(安福路店)', desc: '창문에 귀여운 곰돌이들이 매달려 있는 핫플 카페! 인생샷 백만장 찍기.', type: 'coffee', transport: '🚶 도보 (안푸루 내 위치)' },
+      { time: '18:00', title: '난징시루 쇼핑 & 스타벅스 리저브', cn: '南京西路 / 星巴克臻选上海烘焙工坊', desc: '럭셔리한 거리. 세계에서 가장 큰 스벅 로스터리 매장 구경.', type: 'shopping', transport: '🚕 택시 (약 15분 / 20위안)' },
+      { time: '19:30', title: '천안천수 (1000 Trees) 야경', cn: '天安千树', desc: '독특한 건축물 천안천수에서 쑤저우허 강변 야경 보며 내부에 있는 맛집에서 저녁 식사.', type: 'camera', transport: '🚕 택시 (약 10분 / 16위안)' },
+    ]
+  },
+  {
+    day: 3,
+    date: '4/27 (토)',
+    title: '디즈니랜드 마법의 하루',
+    items: [
+      { time: '08:30', title: '아점: Wagas 또는 베이커리', cn: 'Wagas (沃歌斯) / Baker & Spice', desc: '디즈니는 체력전! 래플스시티 근처 Wagas에서 건강하고 든든한 브런치(파스타, 샐러드)로 에너지 충전.', type: 'food', transport: '🚶 도보 (숙소 근처)' },
+      { time: '09:30', title: '디즈니랜드로 이동', cn: '上海迪士尼度假区', desc: '3명이니 택시나 디디추싱 타는 것이 시간과 체력 절약에 최고입니다.', type: 'navigation', transport: '🚕 택시 (약 45분 / 약 120위안)' },
+      { time: '10:30', title: '상하이 디즈니랜드 입장', cn: '上海迪士尼乐园', desc: '트론, 주토피아 구역 필수! 간식은 칠면조 다리 추천. 앱(APP)으로 대기시간 확인하며 다니세요.', type: 'camera', transport: '내부 도보' },
+      { time: '20:15', title: '일루미네이트 (불꽃놀이)', cn: '奇幻童话城堡', desc: '여행의 하이라이트. 불꽃놀이 후 천천히 퇴장하여 택시나 지하철 11호선 탑승.', type: 'camera', transport: '🚕 택시 (약 120위안) 또는 🚇 지하철' },
+    ]
+  },
+  {
+    day: 4,
+    date: '4/28 (일)',
+    title: '아쉬운 작별, 그리고 귀국',
+    items: [
+      { time: '09:30', title: '아침: 샤오양셩지엔', cn: '小杨生煎(黄浦区)', desc: '상하이를 떠나기 전 겉바속촉 고기만두(셩지엔바오)와 새우만두로 아침 식사.', type: 'food', transport: '🚶 도보 (숙소 주변 5분)' },
+      { time: '10:30', title: '동방명주 뷰 & 마지막 쇼핑', cn: '陆家嘴 / 东方明珠', desc: '푸둥 지역으로 넘어가 낮의 동방명주 뷰를 감상하고 IFC몰 등에서 마지막 기념품 쇼핑.', type: 'shopping', transport: '🚕 택시 (약 15분 / 20위안)' },
+      { time: '13:00', title: '숙소 짐 찾기 및 공항 이동', cn: '浦东国际机场', desc: '9C8559편 탑승을 위해 여유있게 푸동공항으로 출발.', type: 'plane', transport: '🚕 택시 (약 50분 / 150위안)' },
+    ]
+  }
+];
+
+const PHRASES = [
+  { category: '👋 기본 인사', list: [
+    { ko: '안녕하세요', cn: '你好', py: '니하오' },
+    { ko: '감사합니다', cn: '谢谢', py: '씨에씨에' },
+    { ko: '죄송합니다', cn: '对不起', py: '뚜이부치' },
+    { ko: '괜찮아요', cn: '没关系', py: '메이꽌시' },
+    { ko: '얼마인가요?', cn: '多少钱?', py: '뚜어샤오 치엔?' },
+    { ko: '이거 주세요', cn: '我要这个', py: '워 야오 쩌거' },
+  ]},
+  { category: '🍽️ 식당에서', list: [
+    { ko: '3명이에요', cn: '三个人', py: '싼 거 런' },
+    { ko: '메뉴판 주세요', cn: '请给我菜单', py: '칭 게이 워 차이단' },
+    { ko: '고수 빼주세요 (필수!)', cn: '不要香菜', py: '부야오 시앙차이' },
+    { ko: '덜 맵게 해주세요', cn: '微辣', py: '웨이 라' },
+    { ko: '물 좀 주세요', cn: '请给我水', py: '칭 게이 워 쉐이' },
+    { ko: '계산할게요', cn: '买单', py: '마이단' },
+  ]},
+  { category: '🚕 이동할 때', list: [
+    { ko: '여기(지도)로 가주세요', cn: '去这里', py: '취 쩌리' },
+    { ko: '다 왔나요?', cn: '到了吗?', py: '따오 러 마?' },
+    { ko: '여기서 세워주세요', cn: '在这里停', py: '짜이 쩌리 팅' },
+    { ko: '미터기 켜주세요', cn: '请打表', py: '칭 따비아오' },
+    { ko: '길이 막히나요?', cn: '堵车吗?', py: '뚜쳐 마?' },
+    { ko: '영수증 주세요', cn: '请给我发票', py: '칭 게이 워 파피아오' },
+  ]},
+  { category: '🛍️ 쇼핑할 때', list: [
+    { ko: '너무 비싸요', cn: '太贵了', py: '타이 꾸이 러' },
+    { ko: '조금 깎아주세요', cn: '便宜一点吧', py: '피엔이 이디엔 바' },
+    { ko: '입어봐도 되나요?', cn: '可以试穿吗?', py: '커이 스추안 마?' },
+    { ko: '다른 색상 있나요?', cn: '有别的颜色吗?', py: '요우 비에더 옌써 마?' },
+    { ko: '알리페이 되나요?', cn: '可以用支付宝吗?', py: '커이 용 즈푸바오 마?' },
+    { ko: '그냥 둘러보는 중이에요', cn: '随便看看', py: '쑤이비엔 칸칸' },
+  ]},
+  { category: '🚨 기타/긴급', list: [
+    { ko: '화장실이 어디예요?', cn: '洗手间在哪里?', py: '씨쇼우지엔 짜이 나리?' },
+    { ko: '사진 좀 찍어주시겠어요?', cn: '能帮我们拍照吗?', py: '넝 방 워먼 파이자오 마?' },
+    { ko: '예뻐요!', cn: '漂亮!', py: '피아오리앙!' },
+    { ko: '한국인입니다', cn: '我是韩国人', py: '워 스 한구어런' },
+    { ko: '길을 잃었어요', cn: '我迷路了', py: '워 미루 러' },
+    { ko: '도와주세요', cn: '救命 / 帮帮我', py: '지우밍 / 방방 워' },
+  ]},
+];
+
+const RECOMMENDATIONS = [
+  { title: '🐰 필수 기념품', items: ['블라인드 박스 (팝마트, 52TOYS)', '차지(霸王茶姬) 굿즈 및 찻잎', '대백토(大白兔) 밀크카라멜', '페이위에(Feiyue) 스니커즈'] },
+  { title: '🎀 예쁜 소품샵 & 핫플', items: ['LOOKNOW (우캉루/안푸루 디자이너 편집숍)', 'LABELHOOD (트렌디한 의류/소품)', '미니소 플래그십 (난징동루, 산리오 천국)', 'm&m 스토어 (초콜릿 벽 포토존)'] },
+  { title: '💡 택시/이동 꿀팁', items: ['알리페이 앱 내 "DiDi(디디)" 미니앱으로 택시 호출 추천', '3명이면 지하철보다 택시가 효율적 (기본 14위안~)', '고덕지도(高德地图) 앱은 필수! 한국어 X, 중국어 복사 필수'] }
+];
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('itinerary');
+  const [activeDay, setActiveDay] = useState(1);
   const [copiedId, setCopiedId] = useState(null);
 
-  // 여행 기본 정보
-  const tripInfo = {
-    dates: "2026.01.14 (수) - 01.17 (토)",
-    members: "총 11명 (어르신 포함 대가족)",
-    accommodation: {
-      name: "나카도마리 에어비앤비 (Nakadomari)",
-      address: "1374-6 Nakadomari, Onna, Kunigami District, Okinawa 904-0415",
-      note: "조식 없음 / 근처 로손 편의점 & 씨사이드 드라이브인 이용"
-    }
-  };
-
-  // 주소 복사 기능
   const copyToClipboard = (text, id) => {
-    // iframe 환경 등을 고려한 복사 로직
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
+    // 텍스트 복사 로직 (fallback 포함)
     try {
-      document.execCommand('copy');
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
+      navigator.clipboard.writeText(text);
     } catch (err) {
-      console.error('Copy failed', err);
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
     }
-    document.body.removeChild(textArea);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // 일정 데이터
-  const schedule = [
-    {
-      day: 1,
-      date: "1/14 (수)",
-      title: "오키나와 도착 & 로컬 맛집",
-      events: [
-        {
-          time: "10:30",
-          title: "오키나와 공항 도착",
-          desc: "입국 수속 및 렌트카 인수 (약 1시간 30분 소요)",
-          icon: <Car size={24} />,
-          type: "move"
-        },
-        {
-          time: "12:30",
-          title: "점심 식사 (다인원 옵션)",
-          desc: "공항에서 숙소 가는 길목 (우라소에/마키나토)에서 해결합니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "해선식당 티다 (Kaisen Shokudo Tida)",
-              note: "생선 버터구이, 텐동 등. 어르신 선호도 1순위 메뉴.",
-              address: "Makinato, Urasoe, Okinawa 901-2131",
-              image: "https://placehold.co/600x400/6fa1d9/ffffff?text=Kaisen+Tida",
-            },
-            {
-              name: "스테이크하우스 88Jr. 파르코시티점",
-              note: "쇼핑몰 내 넓은 좌석. 깔끔하고 쾌적하며 주차 편리.",
-              address: "3 Chome-1-1 Nishi, Urasoe, Okinawa (Parco City)",
-              image: "https://placehold.co/600x400/c74e50/ffffff?text=Steak+House+88Jr",
-            },
-            {
-              name: "A사인 타코라이스 (A-Sign Taco Rice)",
-              note: "오키나와 B급 소울푸드. 캐주얼하고 신속한 식사 선호 시.",
-              address: "2 Chome-6-10 Minatogawa, Urasoe, Okinawa",
-              image: "https://placehold.co/600x400/ff9933/ffffff?text=A-Sign+Taco+Rice",
-            },
-          ]
-        },
-        {
-          time: "14:30",
-          title: "숙소 체크인 & 낮잠",
-          subtitle: "나카도마리 (Nakadomari)",
-          desc: "짐 풀고 90대 어르신 컨디션 조절 (낮잠 필수)",
-          address: "1374-6 Nakadomari, Onna, Kunigami District",
-          icon: <Home size={24} />,
-          type: "rest"
-        },
-        {
-          time: "16:00",
-          title: "간식: Sea Side Drive-in",
-          desc: "숙소 바로 옆! 스프와 샌드위치 테이크아웃 (24시간 운영)",
-          address: "885 Nakadomari, Onna, Kunigami District",
-          image: "https://images.unsplash.com/photo-1528733918455-5405d4352f00?auto=format&fit=crop&q=80&w=600",
-          icon: <Coffee size={24} />,
-          type: "food"
-        },
-        {
-          time: "18:00",
-          title: "저녁 식사 (다인원 옵션)",
-          desc: "숙소와 가까운 온나촌 내에서 해결합니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "나카마 식당 (Nakama Shokudo)",
-              note: "소키소바(갈비국수)와 정식. 90대 어르신께 가장 편안한 메뉴.",
-              address: "2217-1 Nakama, Onna, Kunigami District",
-              image: "https://placehold.co/600x400/9b59b6/ffffff?text=Nakama+Soba",
-            },
-            {
-              name: "King Tacos (킨 본점)",
-              note: "타코라이스 포장/취식. 캐주얼한 식사나 야식 선호 시 추천.",
-              address: "4244-4 Kin, Kin-cho, Kunigami District",
-              image: "https://placehold.co/600x400/3498db/ffffff?text=King+Tacos",
-            },
-            {
-              name: "리잔 시파크 호텔 뷔페",
-              note: "다국적 메뉴 구성. 11명 동시 식사 가능하고 어르신 만족도 높음.",
-              address: "40-1 Nakama, Onna, Kunigami District",
-              image: "https://placehold.co/600x400/e67e22/ffffff?text=Hotel+Buffet",
-            },
-          ]
-        }
-      ]
-    },
-    {
-      day: 2,
-      date: "1/15 (목)",
-      title: "북부 핵심 투어 (휠체어)",
-      events: [
-        {
-          time: "08:30",
-          title: "아침 식사 (숙소/포장)",
-          desc: "전날 로손 편의점이나 씨사이드 드라이브인에서 산 음식으로 간단히 해결",
-          icon: <Coffee size={24} />,
-          type: "food"
-        },
-        {
-          time: "10:30",
-          title: "츄라우미 수족관",
-          desc: "입구에서 무료 휠체어 대여 필수! 오키짱 쇼(돌고래) 관람",
-          address: "424 Ishikawa, Motobu, Kunigami District",
-          image: "https://images.unsplash.com/photo-1582998491599-2a9121a9424c?auto=format&fit=crop&q=80&w=600",
-          icon: <Sun size={24} />,
-          type: "activity"
-        },
-        {
-          time: "13:00",
-          title: "점심 식사 (다인원 옵션)",
-          desc: "북부에서 내려오는 동선에 맞춘 맛집입니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "808 Poke Bowls Okinawa",
-              note: "신선한 포케 덮밥. 젊은 층/건강식 선호 시 테이크아웃 추천 (16시 마감주의)",
-              address: "2503 Onna, Kunigami District, Okinawa",
-              image: "https://placehold.co/600x400/2ecc71/ffffff?text=808+Poke+Bowls",
-            },
-            {
-              name: "코우리 오션타워 내 레스토랑",
-              note: "경치가 좋고 깔끔한 양식/일식. 휠체어 이동 시 카트 이용 가능.",
-              address: "492 Kouri, Nakijin, Kunigami District",
-              image: "https://placehold.co/600x400/34495e/ffffff?text=Kouri+Ocean+Tower",
-            },
-            {
-              name: "키시모토 식당 (Kishimoto Shokudo)",
-              note: "오키나와 소바 초유명 맛집. 로컬 분위기 선호 시 추천.",
-              address: "5 Chome-4-14 Nago, Okinawa",
-              image: "https://placehold.co/600x400/1abc9c/ffffff?text=Kishimoto+Soba",
-            },
-          ]
-        },
-        {
-          time: "15:00",
-          title: "숙소 복귀 & 휴식",
-          desc: "먼 거리를 다녀왔으니 어르신 휴식 시간 (필수)",
-          icon: <Home size={24} />,
-          type: "rest"
-        },
-        {
-          time: "17:30",
-          title: "저녁 식사 (다인원 옵션)",
-          desc: "부드러운 식감으로 어르신 소화에 좋은 메뉴입니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "아구 샤브샤브 아사히야",
-              note: "부드러운 아구(돼지) 샤브샤브. 90대/60대 만족도 최고. (예약필수)",
-              address: "1-chome-8-3 Agarie, Nago, Okinawa",
-              image: "https://images.unsplash.com/photo-1549247796-5d8004382560?auto=format&fit=crop&q=80&w=600",
-            },
-            {
-              name: "ゆうなみ 坂下店 (유나미 사카시타)",
-              note: "해산물 이자카야/정식. 오키나와 요리 전문. 분위기 좋음.",
-              address: "3 Chome-10-1 Sakashita, Ginowan, Okinawa",
-              image: "https://placehold.co/600x400/7f8c8d/ffffff?text=Yunami+Sakashita",
-            },
-          ]
-        }
-      ]
-    },
-    {
-      day: 3,
-      date: "1/16 (금)",
-      title: "커피 & 아메리칸 빌리지",
-      events: [
-        {
-          time: "09:00",
-          title: "아침: Pan de Kaito",
-          desc: "숙소 근처 유명 베이커리. 부드러운 빵 구매 (전날 구매 가능)",
-          address: "2570 Nago, Okinawa",
-          icon: <Coffee size={24} />,
-          type: "food"
-        },
-        {
-          time: "10:30",
-          title: "만좌모 산책",
-          desc: "휠체어 이동 가능. 코끼리 절벽 배경 사진 촬영 (숙소에서 가까움)",
-          address: "Onna, Kunigami District, Okinawa",
-          image: "https://images.unsplash.com/photo-1606211327891-62025eb270d4?auto=format&fit=crop&q=80&w=600",
-          icon: <Sun size={24} />,
-          type: "activity"
-        },
-        {
-          time: "12:00",
-          title: "점심 식사 (다인원 옵션)",
-          desc: "차탄/아메리칸 빌리지 근처에서 해결합니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "하마야 소바 (Hamaya Soba)",
-              note: "어르신 입맛 저격! 맑은 국물과 아주 부드러운 고기.",
-              address: "2-99 Miyagi, Chatan, Nakagami District",
-              image: "https://placehold.co/600x400/8e44ad/ffffff?text=Hamaya+Soba",
-            },
-            {
-              name: "마제멘 마호로바 (Mazemen Mahoroba)",
-              note: "국물 없는 비빔 라멘. 젊은 층 선호 시 강력 추천.",
-              address: "3 Chome-7-1 Mihama, Chatan, Nakagami District",
-              image: "https://placehold.co/600x400/f39c12/ffffff?text=Mazemen+Mahoroba",
-            },
-            {
-              name: "쿠라스시 (Kura Sushi) 또는 스시로 (Sushiro)",
-              note: "회전 초밥. 메뉴 선택 자유로움. 가족 단위 이용 편리.",
-              address: "1 Chome-5-1 Mihama, Chatan, Nakagami District", // 쿠라스시 차탄점
-              image: "https://placehold.co/600x400/16a085/ffffff?text=Kura+Sushi",
-            },
-          ]
-        },
-        {
-          time: "13:30",
-          title: "커피: Zhyvago Coffee Roastery",
-          subtitle: "MUST GO!",
-          desc: "아메리칸 빌리지 내 위치. 힙한 분위기 & 맛있는 라떼.",
-          address: "340-10 Mihama, Chatan, Nakagami District",
-          image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=600",
-          icon: <Coffee size={24} />,
-          type: "activity"
-        },
-        {
-          time: "15:00",
-          title: "아메리칸 빌리지 자유시간",
-          desc: "쇼핑(이온몰) 또는 해변 산책. 벤치가 많아 쉬기 좋음.",
-          address: "15-69 Mihama, Chatan, Nakagami District",
-          icon: <Sun size={24} />,
-          type: "activity"
-        },
-        {
-          time: "17:30",
-          title: "저녁 식사 (다인원 옵션)",
-          desc: "마지막 밤 만찬! 예약은 필수입니다.",
-          icon: <Utensils size={24} />,
-          type: "food",
-          diningOptions: [
-            {
-              name: "AMERICAN VILLAGE いちげん屋",
-              note: "철판 오코노미야키/야키소바. 다 같이 둘러앉아 식사하며 즐기기 좋음.",
-              address: "9-8 Mihama, Chatan, Nakagami District",
-              image: "https://placehold.co/600x400/d35400/ffffff?text=Ichigenya",
-            },
-            {
-              name: "스테이크하우스 88 아메리칸 빌리지점",
-              note: "클래식 오키나와 스테이크. 인원 수용력이 좋음.",
-              address: "2 Chome-5-1 Mihama, Chatan, Nakagami District",
-              image: "https://placehold.co/600x400/c0392b/ffffff?text=Steak+House+88",
-            },
-            {
-              name: "하마노 (KaiSen Ryori Hamano)",
-              note: "숙소 근처 (온나촌) 복귀 후 해산물 정식/생선구이로 깔끔한 마무리.",
-              address: "128-1 Yamada, Onna, Kunigami District",
-              image: "https://placehold.co/600x400/3498db/ffffff?text=Hamano+Seafood",
-            },
-          ]
-        }
-      ]
-    },
-    {
-      day: 4,
-      date: "1/17 (토)",
-      title: "체크아웃 & 귀국",
-      events: [
-        {
-          time: "08:00",
-          title: "체크아웃 & 공항 출발",
-          desc: "출근 시간 정체 고려 8시 출발 필수! (아침은 차에서 간단히)",
-          icon: <Car size={24} />,
-          type: "move"
-        },
-        {
-          time: "09:30",
-          title: "렌트카 반납 완료",
-          desc: "반납 후 셔틀버스로 공항 이동",
-          icon: <CheckCircle size={24} />,
-          type: "move"
-        },
-        {
-          time: "11:30",
-          title: "인천행 비행기 이륙",
-          desc: "안녕, 오키나와! ✈️",
-          icon: <Home size={24} />,
-          type: "move"
-        }
-      ]
+  const getIcon = (type) => {
+    switch (type) {
+      case 'plane': return <Plane className="w-5 h-5 text-blue-500" />;
+      case 'food': return <Utensils className="w-5 h-5 text-orange-500" />;
+      case 'coffee': return <Coffee className="w-5 h-5 text-amber-600" />;
+      case 'camera': return <Camera className="w-5 h-5 text-pink-500" />;
+      case 'shopping': return <ShoppingBag className="w-5 h-5 text-purple-500" />;
+      case 'navigation': return <Navigation className="w-5 h-5 text-indigo-500" />;
+      case 'home': return <Home className="w-5 h-5 text-teal-500" />;
+      default: return <MapPin className="w-5 h-5 text-gray-500" />;
     }
-  ];
-
-  const extraTips = [
-    {
-      title: "🍵 실버 힐링 코스",
-      desc: "어르신들이 좋아하실 만한 추가 일정 (선택)",
-      items: ["오카시고텐 온나점 (자색고구마 타르트 공장 견학)", "부세나 해중공원 (글라스 보트 탑승)", "숙소 앞 나카유쿠이 시장 (간식)"]
-    },
-    {
-      title: "🍺 젊은층 야간 코스",
-      desc: "체력이 남는 분들을 위한 밤 일정 (선택)",
-      items: ["이자카야 은지 (숙소 근처 맥주 한 잔)", "메가 돈키호테 기노완점 (24시 쇼핑)", "블루씰 아이스크림 (아메리칸 빌리지)"]
-    },
-    {
-      title: "💡 중요 꿀팁",
-      desc: "여행 전 체크 포인트",
-      items: [
-        "휠체어 대여: 츄라우미 수족관 등 필수 지참/대여",
-        "식당 예약: 다인원이므로 모든 저녁 식당은 '예약' 필수!",
-        "차량: 밴 2대 이동 시 '선두차'와 '후미차' 지정하기"
-      ]
-    }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-800">
-      {/* Header */}
-      <header className="bg-emerald-600 text-white p-6 rounded-b-3xl shadow-lg sticky top-0 z-10">
-        <h1 className="text-3xl font-bold mb-2">오키나와 대가족 여행 ✈️</h1>
-        <p className="text-emerald-100 text-lg">{tripInfo.dates}</p>
-        <p className="text-sm opacity-90 mt-1">{tripInfo.members}</p>
-      </header>
-
-      {/* Main Content */}
-      <main className="p-4 max-w-2xl mx-auto">
+    <div className="flex justify-center items-center min-h-screen bg-gray-100 p-4 font-sans text-gray-800">
+      {/* Mobile App Container */}
+      <div className="w-full max-w-[400px] h-[850px] max-h-[90vh] bg-gray-50 rounded-3xl shadow-2xl overflow-hidden flex flex-col relative border-4 border-gray-800">
         
-        {/* Tab Navigation (Days) */}
-        <div className="flex justify-between bg-white p-2 rounded-2xl shadow-sm mb-6 overflow-x-auto">
-          {schedule.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveTab(index)}
-              className={`flex-1 py-3 px-2 rounded-xl text-lg font-bold transition-all whitespace-nowrap ${
-                activeTab === index 
-                  ? "bg-emerald-600 text-white shadow-md" 
-                  : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              {item.day}일차
-            </button>
-          ))}
-          <button
-            onClick={() => setActiveTab(4)}
-            className={`flex-1 py-3 px-2 rounded-xl text-lg font-bold transition-all ${
-              activeTab === 4 
-                ? "bg-orange-500 text-white shadow-md" 
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            정보
-          </button>
-        </div>
-
-        {/* Schedule View */}
-        {activeTab < 4 && (
-          <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold text-emerald-800 mb-4 px-2">
-              {schedule[activeTab].date} <span className="text-lg font-normal text-gray-600 block mt-1">{schedule[activeTab].title}</span>
-            </h2>
-
-            <div className="space-y-6">
-              {schedule[activeTab].events.map((event, idx) => (
-                <div key={idx} className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
-                  {event.image && (
-                    <div className="h-40 w-full overflow-hidden">
-                      <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                  <div className="p-5">
-                    <div className="flex items-start gap-4 mb-3">
-                      <div className={`p-3 rounded-full shrink-0 ${
-                        event.type === 'food' ? 'bg-orange-100 text-orange-600' :
-                        event.type === 'activity' ? 'bg-blue-100 text-blue-600' :
-                        event.type === 'rest' ? 'bg-purple-100 text-purple-600' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {event.icon}
-                      </div>
-                      <div>
-                        <span className={`inline-block px-2 py-1 rounded-md text-sm font-bold mb-1 ${
-                           event.type === 'food' ? 'bg-orange-50 text-orange-700' :
-                           event.type === 'activity' ? 'bg-blue-50 text-blue-700' :
-                           'bg-gray-100 text-gray-700'
-                        }`}>
-                          {event.time}
-                        </span>
-                        <h3 className="text-2xl font-bold text-gray-900 leading-tight">{event.title}</h3>
-                        {event.subtitle && <p className="text-emerald-600 font-semibold mt-1 text-lg">{event.subtitle}</p>}
-                      </div>
-                    </div>
-                    
-                    <p className="text-gray-600 text-lg mb-4 ml-1">{event.desc}</p>
-
-                    {/* Rendering Dining Options */}
-                    {event.diningOptions ? (
-                        <div className="mt-4 border-t pt-4 border-gray-100">
-                            <p className="text-xl font-bold text-gray-800 mb-3">🍽️ 추천 식당 목록</p>
-                            <div className="space-y-4">
-                                {event.diningOptions.map((option, oIdx) => (
-                                    <div key={oIdx} className="bg-orange-50 p-4 rounded-xl shadow-inner border border-orange-200">
-                                        <h4 className="text-xl font-extrabold text-orange-700">{option.name}</h4>
-                                        <p className="text-gray-600 mt-1 mb-3 text-base">{option.note}</p>
-                                        <button 
-                                            onClick={() => copyToClipboard(option.address, `${activeTab}-${idx}-${oIdx}`)}
-                                            className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-bold transition-all active:scale-95 text-base ${
-                                            copiedId === `${activeTab}-${idx}-${oIdx}` 
-                                            ? "bg-green-600 text-white" 
-                                            : "bg-orange-500 text-white hover:bg-orange-600"
-                                            }`}
-                                        >
-                                            {copiedId === `${activeTab}-${idx}-${oIdx}` ? <CheckCircle size={20} /> : <MapPin size={20} />}
-                                            {copiedId === `${activeTab}-${idx}-${oIdx}` ? "주소 복사 완료!" : "주소 복사하기"}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        // Fallback for single address if it exists (for non-dining events)
-                        event.address && (
-                            <button 
-                                onClick={() => copyToClipboard(event.address, `${activeTab}-${idx}`)}
-                                className={`w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all active:scale-95 ${
-                                    copiedId === `${activeTab}-${idx}` 
-                                    ? "bg-green-600 text-white" 
-                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                }`}
-                            >
-                                {copiedId === `${activeTab}-${idx}` ? <CheckCircle size={20} /> : <Copy size={20} />}
-                                {copiedId === `${activeTab}-${idx}` ? "주소 복사 완료!" : "주소 복사하기"}
-                            </button>
-                        )
-                    )}
-                  </div>
-                </div>
-              ))}
+        {/* Header */}
+        <div className="bg-gradient-to-r from-pink-400 to-purple-500 text-white p-5 pb-6 rounded-b-3xl shadow-md z-10 shrink-0">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-xl font-bold">Shanghai Trip ✈️</h1>
+              <p className="text-pink-100 text-sm">Girl's Trip (4/25 - 4/28)</p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">CZ314 / 9C8559</span>
             </div>
           </div>
-        )}
-
-        {/* Info View */}
-        {activeTab === 4 && (
-          <div className="animate-fade-in space-y-6">
-             {/* Accommodation Card */}
-             <div className="bg-white rounded-2xl shadow-md p-6 border-l-8 border-emerald-500">
-              <div className="flex items-center gap-3 mb-4">
-                <Home className="text-emerald-600" size={32} />
-                <h3 className="text-2xl font-bold">숙소 정보</h3>
-              </div>
-              <p className="text-xl font-bold mb-2">{tripInfo.accommodation.name}</p>
-              <p className="text-gray-600 mb-4 text-lg">{tripInfo.accommodation.note}</p>
-              
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
-                <p className="text-gray-800 break-words font-medium">{tripInfo.accommodation.address}</p>
-              </div>
-              
-              <button 
-                onClick={() => copyToClipboard(tripInfo.accommodation.address, 'accom')}
-                className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold text-lg shadow-sm transition-all ${
-                  copiedId === 'accom' ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                {copiedId === 'accom' ? "복사 완료!" : "숙소 주소 복사하기"}
-              </button>
-            </div>
-
-            {/* Tips Section */}
-            {extraTips.map((tip, idx) => (
-              <div key={idx} className="bg-white rounded-2xl shadow-md p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{tip.title}</h3>
-                <p className="text-gray-500 mb-4">{tip.desc}</p>
-                <ul className="space-y-3">
-                  {tip.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 bg-gray-50 p-3 rounded-lg">
-                      <CheckCircle className="text-emerald-500 shrink-0 mt-1" size={20} />
-                      <span className="text-lg font-medium text-gray-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+          
+          {/* Weather Widget */}
+          <div className="bg-white/20 rounded-xl p-3 flex justify-between items-center backdrop-blur-sm">
+            {Object.entries(WEATHER_DATA).map(([date, data], idx) => (
+              <div key={idx} className="flex flex-col items-center">
+                <span className="text-xs font-medium mb-1">{date}</span>
+                {data.icon}
+                <span className="text-[10px] mt-1">{data.temp.split('/')[1]}</span>
               </div>
             ))}
           </div>
-        )}
+        </div>
 
-      </main>
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto pb-24 scroll-smooth">
+          
+          {/* --- TAB: ITINERARY --- */}
+          {activeTab === 'itinerary' && (
+            <div className="p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              
+              {/* Day Selector */}
+              <div className="flex justify-between gap-2 mb-6 bg-white p-1 rounded-2xl shadow-sm">
+                {[1, 2, 3, 4].map(day => (
+                  <button 
+                    key={day}
+                    onClick={() => setActiveDay(day)}
+                    className={`flex-1 py-2 text-sm font-bold rounded-xl transition-colors ${activeDay === day ? 'bg-pink-500 text-white shadow-md' : 'text-gray-400 hover:bg-gray-100'}`}
+                  >
+                    Day {day}
+                  </button>
+                ))}
+              </div>
 
+              {/* Itinerary List */}
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <h2 className="text-lg font-bold text-gray-800">{ITINERARY[activeDay-1].date}</h2>
+                  <p className="text-sm text-pink-500 font-medium">{ITINERARY[activeDay-1].title}</p>
+                  {/* Weather note for the day */}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 bg-white px-3 py-1.5 rounded-full w-fit shadow-sm border border-gray-100">
+                    {WEATHER_DATA[ITINERARY[activeDay-1].date.split(' ')[0]].icon}
+                    <span>{WEATHER_DATA[ITINERARY[activeDay-1].date.split(' ')[0]].desc} ({WEATHER_DATA[ITINERARY[activeDay-1].date.split(' ')[0]].temp})</span>
+                  </div>
+                </div>
+
+                {ITINERARY[activeDay-1].items.map((item, idx) => (
+                  <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex gap-4">
+                    <div className="flex flex-col items-center mt-1">
+                      <span className="text-xs font-bold text-gray-500 w-10 text-center">{item.time}</span>
+                      <div className="w-0.5 h-full bg-pink-100 my-1 rounded-full"></div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start gap-2 mb-1">
+                        <div className="mt-0.5">{getIcon(item.type)}</div>
+                        <h3 className="font-bold text-gray-800 leading-tight">{item.title}</h3>
+                      </div>
+                      
+                      {/* Chinese Address with Copy Button */}
+                      <div 
+                        onClick={() => copyToClipboard(item.cn, `${activeDay}-${idx}`)}
+                        className="flex items-center justify-between bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-xs font-medium mt-2 mb-2 cursor-pointer hover:bg-pink-50 active:bg-pink-100 transition-colors border border-gray-200"
+                      >
+                        <span className="truncate pr-2">{item.cn}</span>
+                        {copiedId === `${activeDay}-${idx}` ? (
+                          <span className="text-green-500 flex items-center gap-1 shrink-0"><CheckCircle2 className="w-3 h-3"/> 복사됨</span>
+                        ) : (
+                          <span className="text-pink-500 flex items-center gap-1 shrink-0"><Copy className="w-3 h-3"/> 복사</span>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+                      
+                      {item.transport && (
+                        <div className="mt-3 text-[11px] font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded inline-block">
+                          {item.transport}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* --- TAB: GOODIES --- */}
+          {activeTab === 'info' && (
+            <div className="p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Info className="w-6 h-6 text-pink-500" /> 여행 꿀팁 & 쇼핑
+              </h2>
+              <div className="space-y-4">
+                {RECOMMENDATIONS.map((rec, idx) => (
+                  <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-800 mb-3">{rec.title}</h3>
+                    <ul className="space-y-2">
+                      {rec.items.map((item, i) => (
+                         <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                           <ChevronRight className="w-4 h-4 text-pink-400 mt-0.5 shrink-0" />
+                           <span className="leading-tight">{item}</span>
+                         </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                
+                <div className="bg-pink-50 rounded-2xl p-5 border border-pink-100 mt-4">
+                  <h3 className="font-bold text-pink-600 mb-2">🏨 숙소 주소 (기사님 보여주기용)</h3>
+                  <p className="text-sm text-gray-700 font-bold mb-2">上海市黄浦区六合路98号</p>
+                  <button 
+                    onClick={() => copyToClipboard('上海市黄浦区六合路98号', 'hotel')}
+                    className="w-full bg-white text-pink-500 font-bold py-2 rounded-xl text-sm border border-pink-200 flex items-center justify-center gap-2 active:bg-pink-100"
+                  >
+                    {copiedId === 'hotel' ? <CheckCircle2 className="w-4 h-4"/> : <Copy className="w-4 h-4" />}
+                    {copiedId === 'hotel' ? '복사 완료!' : '주소 복사하기'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- TAB: PHRASES --- */}
+          {activeTab === 'phrases' && (
+            <div className="p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-pink-500" /> 필수 중국어 30
+              </h2>
+              <p className="text-xs text-gray-500 mb-4">화면을 보여주거나 한글 발음대로 읽어보세요!</p>
+              
+              <div className="space-y-5">
+                {PHRASES.map((group, idx) => (
+                  <div key={idx}>
+                    <h3 className="font-bold text-sm text-pink-600 mb-3 ml-1">{group.category}</h3>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-50">
+                      {group.list.map((phrase, i) => (
+                        <div key={i} className="p-3 flex justify-between items-center hover:bg-gray-50">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-0.5">{phrase.ko}</p>
+                            <p className="text-sm font-bold text-gray-800">{phrase.cn}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs font-medium text-pink-400 bg-pink-50 px-2 py-1 rounded-full">
+                              {phrase.py}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] px-6 py-4 flex justify-between items-center z-20 pb-8">
+          <button 
+            onClick={() => setActiveTab('itinerary')}
+            className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'itinerary' ? 'text-pink-500' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <Calendar className="w-6 h-6" />
+            <span className="text-[10px] font-bold">일정표</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('info')}
+            className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'info' ? 'text-pink-500' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <ShoppingBag className="w-6 h-6" />
+            <span className="text-[10px] font-bold">쇼핑/정보</span>
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('phrases')}
+            className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'phrases' ? 'text-pink-500' : 'text-gray-400 hover:text-gray-600'}`}
+          >
+            <MessageSquare className="w-6 h-6" />
+            <span className="text-[10px] font-bold">중국어회화</span>
+          </button>
+        </div>
+
+      </div>
     </div>
   );
-};
-
-export default OkinawaTripApp;
+}
